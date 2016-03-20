@@ -9,9 +9,9 @@ function crawl(nightmare, dest, listings, curr_range, max_range, n) {
     // if (curr_range >= max_range && curr_range > 0 && max_range > 0 &&
     //     nightmare) {
     if (n >= 3) {
-            console.log('TERMINATING');
+            console.log('TERMINATING ', listings);
             nightmare.end()
-            .then(listings, function (listings) {
+            .then(listings, function () {
                 console.log(listings);
                 console.log('listings LENGTH ',listings.length);
             });
@@ -29,12 +29,20 @@ function crawl(nightmare, dest, listings, curr_range, max_range, n) {
             .on('error', function(err) {
                 console.log(err);
             })
+            .on('log', function(err) {
+                console.log(err);
+            })
             .goto(dest)
             .wait();
         }
 
-        nightmare.evaluate(listings, function (listings) {
+        console.log('after init');
+
+        nightmare.evaluate(listings, function () {
             var nodes = document.getElementsByClassName('hdrlnk');
+
+            console.log(nodes);
+
             var link, title;
 
             for (var i=0; i<nodes.length; i++) {
@@ -43,12 +51,25 @@ function crawl(nightmare, dest, listings, curr_range, max_range, n) {
                 listings[link] = title;
             }
 
+            console.log('current listings: ',listings);
+
             curr_range = document.querySelector('.rangeTo');
             max_range = document.querySelector('.totalcount');
+
+            return {
+                nightmare: nightmare,
+                dest: dest,
+                listings: listings,
+                curr_range: curr_range,
+                max_range: max_range,
+                n: n
+            };
+        })
+        .click('.next')
+        .wait()
+        .then(function(args) {
+            console.log(' from calling then');
+            args.n += 1;
+            return crawl(args.nightmare, args.dest, args.listings, args.curr_range, args.max_range, args.n);
         });
-
-        nightmare.click('.next')
-        .wait();
-
-        return crawl(nightmare, dest, listings, curr_range, max_range, ++n);
     }
